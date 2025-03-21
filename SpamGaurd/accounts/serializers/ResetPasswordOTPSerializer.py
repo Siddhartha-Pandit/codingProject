@@ -27,7 +27,6 @@ class ResetPasswordOTPSerializer(serializers.Serializer):
     def validate(self, data):
         if data["newPassword"] != data["confirmPassword"]:
             raise serializers.ValidationError("New password and confirm password do not match.")
-        # Optionally, also validate using Django's built-in validators.
         try:
             validate_password(data["newPassword"])
         except Exception as e:

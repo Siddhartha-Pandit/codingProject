@@ -12,7 +12,17 @@ from rest_framework.views import APIView
 from   .utils.otp import send_otp,verify_otp
 from .serializers.PasswordSerializers import PasswordSerializer
 from .serializers.ResetPasswordOTPSerializer import ResetPasswordOTPSerializer
+from .utils.emailUtils import send_verification_email
+from .serializers.EmailUpdateSerializer import EmailUpdateSerializer
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth import get_user_model
+
+
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
 class AuthTestView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -29,7 +39,6 @@ class UserRegistrationView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         try:
             serializer = self.get_serializer(data=request.data)
-            # Email is optional; the serializer/model already handle this.
             if serializer.is_valid():
                 user = serializer.save()
                 refresh = RefreshToken.for_user(user)
@@ -203,7 +212,7 @@ class VerifyOTPView(APIView):
              
 class ChangePasswordView(APIView):
     permission_classes=[permissions.IsAuthenticated]
-    def post(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         try:
             serializer = PasswordSerializer(data=request.data)
             if not serializer.is_valid():
@@ -248,7 +257,7 @@ class ChangePasswordView(APIView):
 class ResetPasswordOTPView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    def post(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         try:
             serializer = ResetPasswordOTPSerializer(data=request.data)
             if not serializer.is_valid():
@@ -300,3 +309,102 @@ class ResetPasswordOTPView(APIView):
                 errors=[str(e)]
             )
             return Response(apiError.to_dict(), status=status.HTTP_500_INTERNAL_SERVER_ERROR)  
+        
+
+class AddEmailView(APIView):
+   
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+        serializer = EmailUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            apiError = ApiError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message="Validation error.",
+                errors=serializer.errors
+            )
+            return Response(apiError.to_dict(), status=status.HTTP_400_BAD_REQUEST)
+        
+        email = serializer.validated_data['email']
+        user = request.user
+        user.email = email
+        user.is_email_verified = False
+        user.save()
+
+        # Generate token and UID for email verification.
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        verification_link = request.build_absolute_uri(f"/api/v1/auth/verify-email/?uid={uid}&token={token}")
+
+        subject = "Verify Your Email Address"
+        message = (
+            f"Hi {user.name},\n\n"
+            "Please verify your email address by clicking the link below:\n"
+            f"{verification_link}\n\n"
+            "If you did not request this change, please contact support."
+        )
+        
+        try:
+            send_verification_email(email, subject, message)
+            logger.info(f"Verification email sent to {email} for user {user.pk}.")
+            apiResponse = ApiResponse(
+                status_code=status.HTTP_200_OK,
+                data={"message": "Verification email sent successfully."},
+                message="Verification email sent successfully."
+            )
+            return Response(apiResponse.to_dict(), status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.exception(f"Error sending verification email to {email} for user {user.pk}: {str(e)}")
+            apiError = ApiError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Failed to send verification email.",
+                errors=[str(e)]
+            )
+            return Response(apiError.to_dict(), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class VerifyEmailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        uid64 = request.query_params.get('uid')
+        token = request.query_params.get('token')
+
+        if not uid64 or not token:
+            logger.error("Missing uid or token in the request.")
+            apiError = ApiError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message="Missing uid or token.",
+                errors=["Missing uid or token."]
+            )
+            return Response(apiError.to_dict(), status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            uid = urlsafe_base64_decode(uid64).decode()
+            user = User.objects.get(pk=uid)
+        except Exception as e:
+            logger.exception(f"Error decoding UID or fetching user: {str(e)}")
+            apiError = ApiError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message="Invalid UID.",
+                errors=["Invalid UID."]
+            )
+            return Response(apiError.to_dict(), status=status.HTTP_400_BAD_REQUEST)
+
+        if default_token_generator.check_token(user, token):
+            user.is_email_verified = True
+            user.save()
+            logger.info(f"User {user.pk} email verified successfully.")
+            apiResponse = ApiResponse(
+                status_code=status.HTTP_200_OK,
+                data={"message": "Email verified successfully."},
+                message="Email verified successfully."
+            )
+            return Response(apiResponse.to_dict(), status=status.HTTP_200_OK)
+        else:
+            logger.warning(f"Invalid or expired token for user {user.pk}.")
+            apiError = ApiError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message="Invalid token or expired.",
+                errors=["Invalid token or expired."]
+            )
+            return Response(apiError.to_dict(), status=status.HTTP_400_BAD_REQUEST)

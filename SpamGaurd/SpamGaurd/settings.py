@@ -198,11 +198,12 @@ TWILIO_ACCOUNT_SID = 'ACe508edea6bfcc2c6c5afdc93d8683e4d'
 TWILIO_AUTH_TOKEN = 'fb539c51c3c06866895986664b477ed9'
 TWILIO_PHONE_NUMBER = '+16593338585'
 
-# spring.mail.host=smtp.gmail.com
-# spring.mail.port=587
-# spring.mail.username=demoemailhw@gmail.com
-# spring.mail.password=xpcqalgygmeyzalx
-# spring.mail.properties.mail.smtp.auth=true
-# spring.mail.properties.mail.smtp.starttls.enable=true
-# spring.mail.properties.mail.smtp.starttls.required=true
-# spring.mail.properties.mail.smtp.ssl.trust=smtp.gmail.com
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'demoemailhw@gmail.com'
+EMAIL_HOST_PASSWORD = 'xpcqalgygmeyzalx'
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False  # Since we are using TLS on port 587
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
