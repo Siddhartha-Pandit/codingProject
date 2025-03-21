@@ -48,6 +48,25 @@ class UserRegistrationView(generics.CreateAPIView):
                     "access_token": str(refresh.access_token),
                     "refresh_token": str(refresh)
                 }
+                if user.email:
+                    token=default_token_generator.make_token(user)
+                    uid=urlsafe_base64_encode(force_bytes(user.pk))
+                    verification_link=request.build_absolute_uri(f"/api/v1/auth/verify-email/?uid={uid}&token={token}")
+                    subject="Verify Your Email Address"
+                    message=(
+                        f"Hi {user.name},\n\n"
+                        "Please verify your email address by clicking the link below:\n"
+                        f"{verification_link}\n\n"
+                        "If you did not request this change, please contact support."
+                    )
+                    try:
+                        send_verification_email(user.email,subject,message)
+                    except Exception as email_error:
+                        logger.error(f"Failed to send verification email to {user.email}: {str(email_error)}")
+                        responseData['email_error']="Failed to send verification email."
+                    else:
+                        responseData["email_verification"]="No email provided"
+                
                 apiResponse = ApiResponse(
                     status_code=status.HTTP_201_CREATED,
                     data=responseData,
