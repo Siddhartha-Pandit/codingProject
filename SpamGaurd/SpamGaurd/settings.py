@@ -13,11 +13,17 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+import environ
+
 # from django.conf import settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+env = environ.Env(
+    DEBUG=(bool, False)
+)
+# Read .env file
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -84,8 +90,12 @@ WSGI_APPLICATION = 'SpamGaurd.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env("POSTGRES_DB"),
+        'USER': env("POSTGRES_USER"),
+        'PASSWORD': env("POSTGRES_PASSWORD"),
+        'HOST': env("POSTGRES_HOST"),
+        'PORT': env("POSTGRES_PORT"),
     }
 }
 
@@ -188,22 +198,22 @@ SIMPLE_JWT = {
 }
 
 # redis settings
-REDIS_HOST = 'localhost'  
-REDIS_PORT = 6379         
-REDIS_DB = 0     
+REDIS_HOST = env("REDIS_HOST")
+REDIS_PORT = env.int("REDIS_PORT")
+REDIS_DB = env.int("REDIS_DB")    
 
 # twillio settings
 
-TWILIO_ACCOUNT_SID = 'ACe508edea6bfcc2c6c5afdc93d8683e4d'
-TWILIO_AUTH_TOKEN = 'fb539c51c3c06866895986664b477ed9'
-TWILIO_PHONE_NUMBER = '+16593338585'
+TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN")
+TWILIO_PHONE_NUMBER = env("TWILIO_PHONE_NUMBER")
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'demoemailhw@gmail.com'
-EMAIL_HOST_PASSWORD = 'xpcqalgygmeyzalx'
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False  # Since we are using TLS on port 587
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_BACKEND = env("EMAIL_BACKEND")
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_PORT = env.int("EMAIL_PORT")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
