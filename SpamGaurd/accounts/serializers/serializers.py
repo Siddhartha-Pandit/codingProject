@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from ..models import User
 import re
 class UserSerializer(serializers.ModelSerializer):
     country_code = serializers.CharField(write_only=True)

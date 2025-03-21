@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from rest_framework import generics, permissions, status
 import logging
-from .serializers import UserSerializer
+from .serializers.serializers import UserSerializer
 from .models import User
 from .utils.ApiResponse import ApiResponse
 from .utils.ApiError import ApiError
@@ -10,6 +10,8 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from   .utils.otp import send_otp,verify_otp
+from .serializers.PasswordSerializers import PasswordSerializer
+from .serializers.ResetPasswordOTPSerializer import ResetPasswordOTPSerializer
 logger = logging.getLogger(__name__)
 
 class AuthTestView(generics.GenericAPIView):
@@ -199,3 +201,102 @@ class VerifyOTPView(APIView):
             )
             return Response(apiError.to_dict(),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
              
+class ChangePasswordView(APIView):
+    permission_classes=[permissions.IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+        try:
+            serializer = PasswordSerializer(data=request.data)
+            if not serializer.is_valid():
+                apiError = ApiError(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message="Validation error.",
+                    errors=serializer.errors
+                )
+                return Response(apiError.to_dict(), status=status.HTTP_400_BAD_REQUEST)
+
+            user = request.user
+            oldPassword = serializer.validated_data['oldPassword']
+            if not user.check_password(oldPassword):
+                apiError = ApiError(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message="Old password is incorrect.",
+                    errors=["Old password is incorrect."]
+                )
+                return Response(apiError.to_dict(), status=status.HTTP_400_BAD_REQUEST)
+
+            newPassword = serializer.validated_data['newPassword']
+            # The validate_newPassword method in the serializer already checks password strength.
+            user.set_password(newPassword)
+            user.save()
+            logger.info(f"User {user.pk} changed their password successfully.")
+            apiResponse = ApiResponse(
+                status_code=status.HTTP_200_OK,
+                data={"message": "Password changed successfully."},
+                message="Password changed successfully."
+            )
+            return Response(apiResponse.to_dict(), status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.exception(f"Error while changing password for user {request.user.pk}: {str(e)}")
+            apiError = ApiError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Internal server error.",
+                errors=[str(e)]
+            )
+            return Response(apiError.to_dict(), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class ResetPasswordOTPView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            serializer = ResetPasswordOTPSerializer(data=request.data)
+            if not serializer.is_valid():
+                apiError = ApiError(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message="Validation error.",
+                    errors=serializer.errors
+                )
+                return Response(apiError.to_dict(), status=status.HTTP_400_BAD_REQUEST)
+
+            phone = serializer.validated_data['phone']
+            otp = serializer.validated_data['otp']
+            new_password = serializer.validated_data['newPassword']
+
+            # Verify OTP using the OTP utility (which uses Redis)
+            verified, msg = verify_otp(phone, otp)
+            if not verified:
+                apiError = ApiError(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message=msg,
+                    errors=[msg]
+                )
+                return Response(apiError.to_dict(), status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                user = User.objects.get(phone=phone)
+            except User.DoesNotExist:
+                apiError = ApiError(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    message="User with provided phone not found.",
+                    errors=["User with provided phone not found."]
+                )
+                return Response(apiError.to_dict(), status=status.HTTP_404_NOT_FOUND)
+
+            user.set_password(new_password)
+            user.save()
+            logger.info(f"Password reset successfully for user with phone {phone}.")
+            apiResponse = ApiResponse(
+                status_code=status.HTTP_200_OK,
+                data={"phone": phone},
+                message="Password reset successfully."
+            )
+            return Response(apiResponse.to_dict(), status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.exception(f"Error while resetting password for phone {request.data.get('phone')}: {str(e)}")
+            apiError = ApiError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Internal server error.",
+                errors=[str(e)]
+            )
+            return Response(apiError.to_dict(), status=status.HTTP_500_INTERNAL_SERVER_ERROR)  
