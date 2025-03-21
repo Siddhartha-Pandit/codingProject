@@ -5,6 +5,8 @@ class UserManager(BaseUserManager):
     def create_user(self,name,phone,password=None,email=None,**extra_fields):
         if not phone:
             raise ValueError("Phone number is required for registration")
+        if not phone.startswith('+'):
+            raise ValueError("Complete phone number with country code is required (e.g., '+1...')")
         user=self.model(name=name,phone=phone,email=email.normalize_email(email) if email else None,**extra_fields)
         user.set_password(password)
         user.save(using=self._db)
