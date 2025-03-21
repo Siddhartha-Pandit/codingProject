@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     "corsheaders",
     'rest_framework_simplejwt',
     'accounts.apps.AccountsConfig',
-    
+    'spam.apps.SpamConfig'
 ]
 
 MIDDLEWARE = [

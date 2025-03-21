@@ -1,18 +1,17 @@
-from django.http import HttpResponse
 from rest_framework import generics, permissions, status
 import logging
 from .serializers.serializers import UserSerializer
 from .models import User
-from .utils.ApiResponse import ApiResponse
-from .utils.ApiError import ApiError
+from utils.ApiResponse import ApiResponse
+from utils.ApiError import ApiError
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
-from   .utils.otp import send_otp,verify_otp
+from  utils.otp import send_otp,verify_otp
 from .serializers.PasswordSerializers import PasswordSerializer
 from .serializers.ResetPasswordOTPSerializer import ResetPasswordOTPSerializer
-from .utils.emailUtils import send_verification_email
+from utils.emailUtils import send_verification_email
 from .serializers.EmailUpdateSerializer import EmailUpdateSerializer
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
@@ -23,12 +22,6 @@ from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
-
-class AuthTestView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        return HttpResponse("Hello, authenticated user!", content_type="text/plain")
 
 
 class UserRegistrationView(generics.CreateAPIView):
