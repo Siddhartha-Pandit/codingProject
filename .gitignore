@@ -1,0 +1,8 @@
+# Ignore virtual environment folder
+venv/
+
+# Ignore __pycache__ in the accounts app
+accounts/__pycache__/
+
+# Ignore __pycache__ in the spamGaurd app
+spamGaurd/__pycache__/
