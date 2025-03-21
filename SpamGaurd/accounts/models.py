@@ -7,7 +7,11 @@ class UserManager(BaseUserManager):
             raise ValueError("Phone number is required for registration")
         if not phone.startswith('+'):
             raise ValueError("Complete phone number with country code is required (e.g., '+1...')")
-        user=self.model(name=name,phone=phone,email=email.normalize_email(email) if email else None,**extra_fields)
+        if email:
+            email=self.normalize_email(email)   
+        else:
+            email=None
+        user=self.model(name=name, phone=phone, email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -21,8 +25,8 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser,PermissionsMixin):
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=15,unique=True)
-    email = models.EmailField(max_length=255,unique=True,null=True,blank=True)
-    is_active = models.BooleanField(default=True)
+    email = models.EmailField(max_length=255,unique=False,null=True,blank=True)
+    is_active = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)  
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

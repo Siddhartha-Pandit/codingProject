@@ -186,3 +186,23 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
+
+# redis settings
+REDIS_HOST = 'localhost'  
+REDIS_PORT = 6379         
+REDIS_DB = 0     
+
+# twillio settings
+
+TWILIO_ACCOUNT_SID = 'ACe508edea6bfcc2c6c5afdc93d8683e4d'
+TWILIO_AUTH_TOKEN = 'fb539c51c3c06866895986664b477ed9'
+TWILIO_PHONE_NUMBER = '+16593338585'
+
+# spring.mail.host=smtp.gmail.com
+# spring.mail.port=587
+# spring.mail.username=demoemailhw@gmail.com
+# spring.mail.password=xpcqalgygmeyzalx
+# spring.mail.properties.mail.smtp.auth=true
+# spring.mail.properties.mail.smtp.starttls.enable=true
+# spring.mail.properties.mail.smtp.starttls.required=true
+# spring.mail.properties.mail.smtp.ssl.trust=smtp.gmail.com

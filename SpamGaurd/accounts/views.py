@@ -3,12 +3,13 @@ from rest_framework import generics, permissions, status
 import logging
 from .serializers import UserSerializer
 from .models import User
-from accounts.utils.ApiResponse import ApiResponse
-from accounts.utils.ApiError import ApiError
+from .utils.ApiResponse import ApiResponse
+from .utils.ApiError import ApiError
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from rest_framework.views import APIView
+from   .utils.otp import send_otp,verify_otp
 logger = logging.getLogger(__name__)
 
 class AuthTestView(generics.GenericAPIView):
@@ -26,6 +27,7 @@ class UserRegistrationView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         try:
             serializer = self.get_serializer(data=request.data)
+            # Email is optional; the serializer/model already handle this.
             if serializer.is_valid():
                 user = serializer.save()
                 refresh = RefreshToken.for_user(user)
@@ -58,7 +60,7 @@ class UserRegistrationView(generics.CreateAPIView):
 
 
 class UserLoginView(generics.GenericAPIView):
-    serializer_class = UserSerializer  # Optionally, you may use a dedicated login serializer.
+    serializer_class = UserSerializer 
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -103,3 +105,97 @@ class UserLoginView(generics.GenericAPIView):
                 errors=[str(e)]
             )
             return Response(apiError.to_dict(), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GenerateOTPView(APIView):
+    permissions_classes=[permissions.AllowAny]
+    
+    def post(self,request,*args,**kwargs):
+        phone = request.data.get('phone')
+        if not phone:
+            apiError=ApiError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message="Missing phone number",
+                errors=["Phone number is required"]
+            )
+            return Response(apiError.to_dict(),status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            success,message=send_otp(phone)
+            if success:
+                logger.info(f"OTP is sent successfully to phone {phone}.")
+                apiResponse=ApiResponse(
+                    status_code=status.HTTP_200_OK,
+                    data=None,
+                    message="OTP is sent successfully"
+                )
+                return Response(apiResponse.to_dict(),status=status.HTTP_200_OK)
+            else:
+                logger.error(f"Failed to send the OTP to phone {phone}")
+                apiError=ApiError(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message=message,
+                    errors=[message]
+                )
+                return Response(apiError.to_dict(),status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.exception(f"Error while sending OTP to phone {phone}: {str(e)}")
+            apiError=ApiError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                errors=[str(e)]
+            )
+            return Response(apiError.to_dict(),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class VerifyOTPView(APIView):
+    permission_classes=[permissions.AllowAny]
+    def post(self, request, *args, **kwargs):
+        phone=request.data.get('phone')
+        otp=request.data.get('otp')
+        if not (phone and otp):
+            apiError=ApiError(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                message="phone and OTP both are required",
+                errors=["Phone number and OTP are required"]
+            )
+            return Response(apiError.to_dict(),status=status.HTTP_400_BAD_REQUEST)    
+
+        try:
+            verified,message=verify_otp(phone,otp)
+            if verified:
+                try:
+                    user=User.objects.get(phone=phone)
+                    user.is_active=True
+                    user.save()
+                    logger.info(f"User phone {phone} is verified successfully.")
+                    apiResponse=ApiResponse(
+                        status_code=status.HTTP_200_OK,
+                        data=None,
+                        message="OTP is verified successfully"
+                    )
+                    return Response(apiResponse.to_dict(),status=status.HTTP_200_OK)
+            
+                except User.DoesNotExist:
+                    logger.error(f"User phone {phone} is not found")
+                    apiError=ApiError(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        message="User not found",
+                        errors=["User not found"]
+                    )
+                    return Response(apiError.to_dict(),status=status.HTTP_404_NOT_FOUND)
+            else:
+                logger.warning(f"OTP verification failed for phone {phone}")   
+                apiError=ApiError(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message=message,
+                    errors=[message]
+                )
+                return Response(apiError.to_dict(),status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.exception(f"Error while verifying OTP for phone {phone}: {str(e)}")
+            apiError=ApiError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="internal server error.",
+                errors=[str(e)]
+            )
+            return Response(apiError.to_dict(),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+             
