@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: .
@@ -12,6 +10,7 @@ services:
       - "8000:8000"
     depends_on:
       - postgres
+      - redis
 
   postgres:
     image: postgres:14
@@ -22,5 +21,13 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   postgres_data:
+  redis_data:

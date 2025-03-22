@@ -14,18 +14,6 @@ from utils.ApiError import ApiError
 
 logger = logging.getLogger(__name__)
 
-class AuthTestView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        # Wrap plain text message in an ApiResponse
-        api_response = ApiResponse(
-            status_code=status.HTTP_200_OK,
-            data="Hello, authenticated user!",
-            message="Success"
-        )
-        return Response(api_response.to_dict(), status=status.HTTP_200_OK)
-
 class SearchByNameView(APIView):
     permission_classes = [IsAuthenticated]
 

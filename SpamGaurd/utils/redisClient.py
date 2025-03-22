@@ -13,5 +13,4 @@ redis_pool = redis.ConnectionPool(
 redis_client = redis.StrictRedis(connection_pool=redis_pool)
 
 def get_redis_client():
-    ##return the redis client
     return redis_client

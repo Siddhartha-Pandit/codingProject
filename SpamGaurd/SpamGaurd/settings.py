@@ -91,13 +91,19 @@ WSGI_APPLICATION = 'SpamGaurd.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env("POSTGRES_DB"),
-        'USER': env("POSTGRES_USER"),
-        'PASSWORD': env("POSTGRES_PASSWORD"),
-        'HOST': env("POSTGRES_HOST"),
-        'PORT': env("POSTGRES_PORT"),
+        'NAME': "spamgaurd_db",
+        'USER': "spamgaurd_user",
+        'PASSWORD':"supersecretpassword",
+        'HOST': "postgres",
+        'PORT': 5432,
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # Password validation
@@ -198,22 +204,27 @@ SIMPLE_JWT = {
 }
 
 # redis settings
-REDIS_HOST = env("REDIS_HOST")
-REDIS_PORT = env.int("REDIS_PORT")
-REDIS_DB = env.int("REDIS_DB")    
+REDIS_HOST=env("REDIS_HOST")
+REDIS_PORT=env("REDIS_PORT")
+REDIS_DB=env("REDIS_DB")
+  
 
 # twillio settings
 
 TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = env("TWILIO_PHONE_NUMBER")
+# TWILIO_ACCOUNT_SID="ACe508edea6bfcc2c6c5afdc93d8683e4d"
+# TWILIO_AUTH_TOKEN="fb539c51c3c06866895986664b477ed9"
+# TWILIO_PHONE_NUMBER="+16593338585"
 
-EMAIL_BACKEND = env("EMAIL_BACKEND")
-EMAIL_HOST = env("EMAIL_HOST")
-EMAIL_PORT = env.int("EMAIL_PORT")
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
-EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL")
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+
+EMAIL_BACKEND=env("EMAIL_BACKEND")
+EMAIL_HOST=env("EMAIL_HOST")
+EMAIL_PORT=env("EMAIL_PORT")
+EMAIL_HOST_USER=env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD=env("EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS=env("EMAIL_USE_TLS")
+EMAIL_USE_SSL=env("EMAIL_USE_SSL")
+DEFAULT_FROM_EMAIL=env("DEFAULT_FROM_EMAIL")
 
