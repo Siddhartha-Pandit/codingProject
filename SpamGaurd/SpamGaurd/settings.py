@@ -91,11 +91,11 @@ WSGI_APPLICATION = 'SpamGaurd.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': "spamgaurd_db",
-        'USER': "spamgaurd_user",
-        'PASSWORD':"supersecretpassword",
-        'HOST': "postgres",
-        'PORT': 5432,
+        'NAME': env("POSTGRES_DB"),
+        'USER': env("POSTGRES_USER"),
+        'PASSWORD':env("POSTGRES_PASSWORD"),
+        'HOST': env("POSTGRES_HOST"),
+        'PORT': env("POSTGRES_PORT"),
     }
 }
 # DATABASES = {
@@ -214,9 +214,7 @@ REDIS_DB=env("REDIS_DB")
 TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = env("TWILIO_PHONE_NUMBER")
-# TWILIO_ACCOUNT_SID="ACe508edea6bfcc2c6c5afdc93d8683e4d"
-# TWILIO_AUTH_TOKEN="fb539c51c3c06866895986664b477ed9"
-# TWILIO_PHONE_NUMBER="+16593338585"
+
 
 
 EMAIL_BACKEND=env("EMAIL_BACKEND")
